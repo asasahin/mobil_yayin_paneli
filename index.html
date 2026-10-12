@@ -120,6 +120,19 @@ td.mono{white-space:nowrap;background:none;font-variant-numeric:tabular-nums}
 .banner{font-size:13px;background:var(--warn-soft);border-radius:8px;padding:8px 10px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:14px;z-index:9}
 .empty{color:var(--muted);font-size:14px}
+.est{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.est div{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.est b{display:block;font-family:var(--f-display);font-size:24px;font-variant-numeric:tabular-nums;line-height:1.2}
+.est span{font-size:13px;color:var(--muted)}
+.dur{font-family:var(--f-mono);font-size:12px;font-weight:500;background:var(--accent-soft);color:var(--accent);padding:2px 8px;border-radius:999px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.cgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.cgrid h3{font-size:13px;margin:0 0 4px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.cgrid ul,.cgrid ol{margin:0;padding-left:18px;font-size:14px}
+.cgrid li{margin-bottom:3px}
+.tools{display:flex;gap:6px;flex-wrap:wrap}
+.tools span,.tools a{font-size:13px;border:1px solid var(--line);border-radius:6px;padding:2px 8px;text-decoration:none;color:var(--ink)}
+.tools a:hover{border-color:var(--accent)}
+@media (max-width:820px){.est{grid-template-columns:1fr}.cgrid{grid-template-columns:1fr}}
 @media (max-width:820px){
   .app{grid-template-columns:1fr}
   .rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:16px}
@@ -159,6 +172,7 @@ td.mono{white-space:nowrap;background:none;font-variant-numeric:tabular-nums}
   <main>
     <nav class="views" role="tablist" aria-label="Görünüm">
       <button role="tab" data-view="list" aria-selected="true">Kontrol listesi</button>
+      <button role="tab" data-view="content" aria-selected="false">İçerik hazırlığı</button>
       <button role="tab" data-view="card" aria-selected="false">Bilgi kartı</button>
       <button role="tab" data-view="sizes" aria-selected="false">Ölçüler ve limitler</button>
       <button role="tab" data-view="settings" aria-selected="false">Proje ayarları</button>
@@ -438,6 +452,83 @@ function renderCard(){
     return `<section class="card-group"><h2>${esc(label)}</h2><div class="fields">${ks.map(fieldHTML).join("")}</div></section>`; }).join("")}`;
 }
 
+/* ---------- İçerik hazırlığı ---------- */
+// Süreler tek kişinin, bir dil için harcayacağı tahmini saat (min, max).
+const CONTENT = [
+ {id:"legal",t:"Gizlilik politikası, KVKK metni ve kullanım koşulları",min:3,max:6,when:"En başta: formlar ve mağaza kaydı bu URL'leri ister.",
+  how:["Kullandığın SDK'ları ve topladığın verileri listele (Firebase, Sentry, reklam, ödeme).","Bir oluşturucuyla taslak çıkar, sonra kendi uygulamana göre düzelt.","KVKK aydınlatma metnini ayrı bir bölüm ya da sayfa olarak ekle.","Herkese açık bir adreste yayınla: GitHub Pages, Notion'un herkese açık sayfası veya kendi siten."],
+  tools:[["App Privacy Policy Generator","https://app-privacy-policy-generator.firebaseapp.com"],["Termly","https://termly.io"],["iubenda","https://www.iubenda.com"],["Claude ile taslak"]],
+  tip:"Ücretli uygulama, abonelik veya sağlık/finans verisi varsa son metni bir avukata göstermek 1–2 hafta ekler ama sonradan çıkacak sorunları önler."},
+ {id:"site",t:"Destek sayfası ve basit tanıtım sitesi",min:2,max:6,when:"Hukuki metinlerle aynı gün; aynı sitede dursunlar.",
+  how:["Tek sayfa yeterli: uygulamanın ne yaptığı, mağaza bağlantıları, SSS, iletişim.","Gizlilik, koşullar ve hesap silme sayfalarını aynı alan adında alt sayfa yap.","apple-app-site-association ve assetlinks.json dosyalarını da buraya koyacaksın; statik dosya sunabilen bir yer seç."],
+  tools:[["Carrd","https://carrd.co"],["Framer","https://www.framer.com"],["GitHub Pages","https://pages.github.com"],["Cloudflare Pages","https://pages.cloudflare.com"]],
+  tip:"Destek e-postası için alan adına bağlı ücretsiz bir yönlendirme (Cloudflare Email Routing, ImprovMX) yeterli."},
+ {id:"icon",t:"Uygulama ikonu",min:3,max:10,when:"Geliştirmenin ortasında; marka renkleri ve splash bunu takip eder.",
+  how:["Tek ve basit bir sembol seç; ikonda metin kullanma.","1024×1024 çalış, sonra 60×60 ve 29×29 boyutta küçültüp okunuyor mu bak.","iOS için Icon Composer ile açık, koyu ve renkli varyantları üret.","Android için ön/arka katmanı ayır, Android Studio → Image Asset ile adaptive ve monochrome ikonları oluştur.","Play için 512×512 sürümünü ayrıca dışa aktar."],
+  tools:[["Figma","https://www.figma.com"],["Icon Composer (Xcode 26)"],["Android Studio Image Asset"],["IconKitchen","https://icon.kitchen"]],
+  tip:"Tasarımcıyla çalışırsan iş saati değişmez ama 3–7 günlük bekleme ve 1–2 revizyon turu ekle."},
+ {id:"splash",t:"Splash ekranı ve marka renkleri",min:1,max:2,when:"İkondan hemen sonra.",
+  how:["Arka plan rengini ikonla uyumlu seç, koyu mod için de bir renk belirle.","Android 12+ splash'inde ikonun 240 dp'lik alanda ortalandığını unutma.","Expo kullanıyorsan expo-splash-screen ayarlarını, Flutter'da flutter_native_splash'ı kullan."],
+  tools:[["Figma"],["flutter_native_splash"],["expo-splash-screen"]]},
+ {id:"texts",t:"Mağaza metinleri (ad, alt başlık, açıklamalar, anahtar kelimeler)",min:3,max:6,when:"Ekran görüntülerinden önce: görsellerdeki başlıklar bu metinlerden çıkar.",
+  how:["5–10 rakibin sayfasını incele: hangi kelimeleri kullanıyorlar, ilk satırda ne vaat ediyorlar?","Kullanıcının arayacağı 10–20 kelimelik bir liste çıkar.","iOS: ad + alt başlık + 100 karakterlik anahtar kelime alanına kelimeleri tekrarsız dağıt.","Play: kısa açıklamaya ana faydayı, tam açıklamaya kelimeleri doğal cümlelerle yerleştir.","Açıklamayı başlıklı kısa paragraflar ve madde işaretleriyle yaz."],
+  tools:[["AppFigures","https://appfigures.com"],["Astro","https://tryastro.app"],["App Store arama önerileri"],["Claude ile taslak"]],
+  tip:"Her ek dil için 1–2 saat ekle. Makine çevirisini mutlaka anadili olan birine okut."},
+ {id:"shots",t:"Ekran görüntüleri",min:5,max:12,when:"Arayüz son haline geldikten sonra, yayından 1 hafta önce.",
+  how:["En güçlü 5–6 ekranı seç; ilk 2–3 görsel kararın çoğunu belirler.","Gerçekçi demo veri hazırla (boş liste, test123 gibi isimler olmasın).","Durum çubuğunu temizle: iOS'ta xcrun simctl status_bar override, Android'de demo mode.","6.9 inç iPhone simülatöründe ve büyük bir Android emülatöründe çek.","Üstüne kısa başlıklar ekle (en fazla 5–6 kelime) ve tutarlı bir arka plan kullan.","Her dil için başlıkları değiştirerek tekrar dışa aktar."],
+  tools:[["Figma şablonları"],["AppLaunchpad","https://theapplaunchpad.com"],["Previewed","https://previewed.app"],["fastlane snapshot / screengrab","https://docs.fastlane.tools"]],
+  tip:"fastlane ile otomatikleştirmek ilk sefer 4–6 saat sürer ama her güncellemede ve her dilde saatler kazandırır."},
+ {id:"feature",t:"Play öne çıkan görseli",p:"android",min:1,max:2,when:"Ekran görüntüleriyle aynı oturumda; aynı stili kullan.",
+  how:["1024×500 çalış; önemli içeriği ortada tut.","İkon, ad ve tek cümlelik fayda yeterli.","Video ekleyeceksen ortadaki oynat butonunun altında kalacak alanı boş bırak."],
+  tools:[["Figma"],["Canva","https://www.canva.com"]]},
+ {id:"video",t:"Tanıtım videosu (isteğe bağlı)",min:4,max:12,when:"İlk sürümde atlanabilir; ilk güncellemelerde ekle.",
+  how:["15–30 saniyelik bir senaryo yaz: sorun, 3 temel özellik, kapanış.","Simülatörde kaydet: xcrun simctl io booted recordVideo; Android'de Android Studio ekran kaydı veya adb shell screenrecord.","Kesip birleştir, kısa yazılar ekle; App Preview için sesin isteğe bağlı olduğunu unutma.","Play için YouTube'a liste dışı olarak yükle."],
+  tools:[["CapCut","https://www.capcut.com"],["DaVinci Resolve","https://www.blackmagicdesign.com/products/davinciresolve"],["iMovie"],["Rotato","https://rotato.app"]]},
+ {id:"forms",t:"Gizlilik ve içerik formları",min:1,max:3,when:"Hukuki metinler bittikten sonra; aynı SDK listesini kullan.",
+  how:["App Store App Privacy, Play Veri güvenliği, Play Uygulama içeriği beyanları.","Yaş derecelendirme anketleri (Apple ve IARC).","Her SDK'nın kendi gizlilik belgesindeki cevapları referans al."],
+  tools:[["SDK'ların gizlilik belgeleri"],["Paneldeki 'Gizlilik ve içerik beyanları' aşaması"]]},
+ {id:"iapcopy",t:"Abonelik / satın alma ekranı ve ürün metinleri",min:2,max:4,when:"Ürünleri mağazada tanımlarken.",
+  skipIf:"Gelir modeli ücretsiz veya reklamsa atlanabilir.",
+  how:["Ürün adları ve açıklamaları (her mağazada ayrı karakter sınırı var).","Paywall ekranında fiyat, süre, otomatik yenileme, Koşullar ve Gizlilik bağlantıları.","iOS'ta ilk ürün için inceleme ekran görüntüsü gerekir."],
+  tools:[["RevenueCat Paywalls","https://www.revenuecat.com"],["Figma"]]},
+ {id:"review",t:"İnceleme notu ve demo hesap",min:0.5,max:1,when:"İlk gönderimden hemen önce.",
+  how:["Süresi dolmayan, verisi dolu bir demo hesap aç.","Giriş dışındaki engelleri (SMS, davet kodu, konum) nasıl aşacaklarını yaz.","Gerekiyorsa kısa bir ekran kaydı bağlantısı ekle."],
+  tools:[["Paneldeki 'İnceleme ekibi için demo hesap' adımı"]]},
+ {id:"notes",t:"Sürüm notları",min:0.25,max:0.5,when:"Her yüklemede.",
+  how:["İlk sürüm için 2–3 cümlelik bir tanıtım yeterli.","Güncellemelerde kullanıcının fark edeceği değişiklikleri yaz; 'hata düzeltmeleri' tek başına yetersiz kalır."],
+  tools:[["Git commit geçmişi"]]}
+];
+const fmtH = h => h<1 ? Math.round(h*60)+" dk" : (Number.isInteger(h)?h:h.toFixed(1).replace(".",","))+" saat";
+const fmtR = (a,b) => a<1&&b<1 ? `${Math.round(a*60)}–${Math.round(b*60)} dk` : a<1 ? `${fmtH(a)} – ${fmtH(b)}` : `${fmtH(a).replace(" saat","")}–${fmtH(b)}`;
+
+function renderContent(){
+  const p=P(); const items=CONTENT.filter(c=>applies(c));
+  let tMin=0,tMax=0,rMin=0,rMax=0,done=0;
+  items.forEach(c=>{ tMin+=c.min; tMax+=c.max; if(p.done["c-"+c.id]) done++; else { rMin+=c.min; rMax+=c.max; } });
+  const days = h => Math.ceil(h/3);
+  return `<h1>İçerik hazırlığı</h1><p class="lead">Mağazaya çıkmak için hazırlaman gereken içerikler, nasıl hazırlanacakları ve tek kişi için tahmini süreleri. Süreler bir dil içindir; hazırladıkça işaretle, kalan süre güncellenir.</p>
+  <div class="est">
+    <div><b>${Math.round(tMin)}–${Math.round(tMax)} saat</b><span>toplam tahmini iş</span></div>
+    <div><b>${Math.round(rMin)}–${Math.round(rMax)} saat</b><span>kalan (${done}/${items.length} içerik hazır)</span></div>
+    <div><b>${days(rMin)}–${days(rMax)} akşam</b><span>günde 3 saat ayırırsan</span></div>
+  </div>
+  <div class="callout" style="margin-bottom:18px"><b>Önerilen sıra:</b> hukuki metinler ve site, ikon, mağaza metinleri, ekran görüntüleri, formlar. Ekran görüntülerini arayüz bitince yap; erken çekilenler genelde yeniden çekilir.</div>
+  <div class="steps">${items.map(c=>{ const id="c-"+c.id, d=!!p.done[id], open=!!S.open[id];
+    return `<article class="step${d?" done":""}${open?" open":""}">
+      <div class="sh"><input type="checkbox" class="cb" data-step="${id}" ${d?"checked":""} aria-label="${esc(c.t)} hazır">
+      <button class="sbtn" data-toggle="${id}" aria-expanded="${open}"><span class="st">${esc(c.t)}</span>
+      <span class="meta"><span class="dur">${fmtR(c.min,c.max)}</span>${pchip(c.p)}<span class="has">${esc(c.when)}</span></span></button>
+      <button class="tog" data-toggle="${id}" aria-label="Ayrıntıları aç/kapat">${chev}</button></div>
+      ${open?`<div class="sb">
+        ${c.skipIf?`<span class="hint">${esc(c.skipIf)}</span>`:""}
+        <div class="cgrid"><div><h3>Nasıl hazırlanır</h3><ol>${c.how.map(h=>`<li>${esc(h)}</li>`).join("")}</ol></div>
+        <div><h3>Araçlar</h3><div class="tools">${c.tools.map(([n,u])=>u?`<a href="${u}" target="_blank" rel="noopener">${esc(n)} ↗</a>`:`<span>${esc(n)}</span>`).join("")}</div></div></div>
+        ${c.tip?`<div class="callout"><b>İpucu:</b> ${esc(c.tip)}</div>`:""}
+        <div class="note"><label for="n-${id}">Notların</label><textarea id="n-${id}" data-note="${id}" rows="2" placeholder="Dosya konumu, tasarımcı, karar…">${esc(p.notes[id]||"")}</textarea></div>
+      </div>`:""}
+    </article>`; }).join("")}</div>`;
+}
+
 function renderSizes(){
   const rows=(r)=>r.map(x=>`<tr><td>${x[0]}</td><td class="mono">${x[1]}</td><td>${x[2]}</td></tr>`).join("");
   return `<h1>Ölçüler ve limitler</h1><p class="lead">Görseller ve metinler için mağazaların istediği değerler. Değerler zamanla değişebilir; yükleme ekranındaki uyarı her zaman önceliklidir.</p>
@@ -489,7 +580,7 @@ function render(){
   if(!P()) return;
   renderRail();
   const v=$("#view");
-  v.innerHTML = S.view==="card"?renderCard(): S.view==="sizes"?renderSizes(): S.view==="settings"?renderSettings(): renderList();
+  v.innerHTML = S.view==="content"?renderContent(): S.view==="card"?renderCard(): S.view==="sizes"?renderSizes(): S.view==="settings"?renderSettings(): renderList();
 }
 
 /* ---------- Etkileşim ---------- */
