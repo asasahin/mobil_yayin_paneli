@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Yayın Paneli</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sabit sol ray (proje + aşamalar), sağda aşamanın adım kartları; telefonda ray üstte yatay şerit olur */
+:root{
+  --bg:#f3f4f1; --surface:#ffffff; --sunken:#e9ebe6; --line:#d6d9d1; --ink:#1b2420; --muted:#5d6862;
+  --accent:#0f6b55; --accent-soft:#dcefe8; --ios:#2a5bd7; --ios-soft:#e1e9fb; --droid:#3d8a1f; --droid-soft:#e4f2dc;
+  --warn:#9a5b00; --warn-soft:#fbefd9; --danger:#b3261e; --danger-soft:#fbe3e1;
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121614; --surface:#1a201d; --sunken:#0e1210; --line:#2c3531; --ink:#e4ebe7; --muted:#9aa7a0;
+  --accent:#4cc3a1; --accent-soft:#163a30; --ios:#8eaaf5; --ios-soft:#1c2846; --droid:#8fd068; --droid-soft:#1f3317;
+  --warn:#f0b357; --warn-soft:#3a2a10; --danger:#f2867e; --danger-soft:#43201d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121614; --surface:#1a201d; --sunken:#0e1210; --line:#2c3531; --ink:#e4ebe7; --muted:#9aa7a0;
+  --accent:#4cc3a1; --accent-soft:#163a30; --ios:#8eaaf5; --ios-soft:#1c2846; --droid:#8fd068; --droid-soft:#1f3317;
+  --warn:#f0b357; --warn-soft:#3a2a10; --danger:#f2867e; --danger-soft:#43201d; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+.app{display:grid;grid-template-columns:290px minmax(0,1fr);min-height:100vh}
+.rail{border-right:1px solid var(--line);background:var(--surface);padding:20px 16px;display:flex;flex-direction:column;gap:18px;position:sticky;top:env(safe-area-inset-top,0px);height:100vh;overflow:auto}
+.brand{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.brand i{width:12px;height:20px;border:2px solid var(--accent);border-radius:3px;display:inline-block;position:relative}
+.brand i::after{content:"";position:absolute;left:3px;right:3px;bottom:2px;height:2px;background:var(--accent);border-radius:1px}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.proj{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+select,input[type=text],input[type=url],input[type=email],input[type=date],textarea{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:70px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:500;font-size:14px;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn.small{padding:4px 9px;font-size:13px}
+.save{font-size:12px;color:var(--muted);font-family:var(--f-mono)}
+.phases{display:flex;flex-direction:column;gap:2px;list-style:none;margin:0;padding:0}
+.phases button{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:14px}
+.phases button:hover{background:var(--sunken)}
+.phases button[aria-current="true"]{background:var(--accent-soft);font-weight:600}
+.phases .n{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.phases .c{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.phases .full .c{color:var(--accent)}
+.meter{height:6px;background:var(--sunken);border-radius:3px;overflow:hidden}
+.meter b{display:block;height:100%;background:var(--accent);transition:width .3s}
+.total{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.views{display:flex;gap:4px;border-bottom:1px solid var(--line);padding:0 28px;background:var(--surface);position:sticky;top:env(safe-area-inset-top,0px);z-index:2;overflow-x:auto}
+.views button{all:unset;cursor:pointer;padding:14px 12px 12px;font-weight:500;font-size:14px;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+.views button[aria-selected="true"]{color:var(--ink);border-color:var(--accent)}
+main{min-width:0}
+.wrap{max-width:900px;padding-block:24px 80px;padding-inline:28px}
+h1{font-family:var(--f-display);font-weight:700;font-size:30px;line-height:1.15;margin:0 0 6px;text-wrap:balance;letter-spacing:-.015em}
+h2{font-family:var(--f-display);font-weight:600;font-size:21px;margin:0 0 10px;text-wrap:balance}
+.lead{color:var(--muted);margin:0 0 20px;max-width:65ch}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:999px;font-family:var(--f-mono)}
+.chip.ios{background:var(--ios-soft);color:var(--ios)}
+.chip.android{background:var(--droid-soft);color:var(--droid)}
+.chip.must{background:var(--warn-soft);color:var(--warn)}
+.steps{display:flex;flex-direction:column;gap:10px}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.step.done{background:transparent}
+.step.done .st{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.sh{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px 14px}
+.cb{appearance:none;width:22px;height:22px;border:2px solid var(--line);border-radius:6px;cursor:pointer;display:grid;place-content:center;margin:0;background:var(--surface)}
+.cb:checked{background:var(--accent);border-color:var(--accent)}
+.cb:checked::after{content:"";width:6px;height:11px;border:solid var(--surface);border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.sbtn{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:3px;min-width:0}
+.st{font-weight:600}
+.meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.meta .has{font-size:12px;color:var(--muted)}
+.tog{all:unset;cursor:pointer;width:30px;height:30px;display:grid;place-content:center;border-radius:6px;color:var(--muted)}
+.tog:hover{background:var(--sunken)}
+.tog svg{transition:transform .2s}
+.step.open .tog svg{transform:rotate(180deg)}
+.sb{padding:0 14px 16px 48px;display:flex;flex-direction:column;gap:14px}
+.info{max-width:68ch}
+.info p{margin:0 0 8px}
+.info ul{margin:0 0 8px;padding-left:20px}
+.info li{margin-bottom:4px}
+.info code,.mono{font-family:var(--f-mono);font-size:13px;background:var(--sunken);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.callout{border-radius:8px;padding:10px 12px;font-size:14px;background:var(--warn-soft);color:var(--ink);border-left:3px solid var(--warn)}
+.callout b{color:var(--warn)}
+.links{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:14px}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;background:var(--sunken);border-radius:8px;padding:12px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld.wide{grid-column:1/-1}
+.fld label{font-size:13px;font-weight:600;display:flex;justify-content:space-between;gap:8px}
+.cnt{font-family:var(--f-mono);font-weight:400;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.cnt.over{color:var(--danger);font-weight:600}
+.hint{font-size:12px;color:var(--muted)}
+.note label{font-size:13px;font-weight:600;display:block;margin-bottom:4px}
+.card-group{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.card-group h2{font-size:18px}
+.card-group .fields{background:transparent;padding:0}
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--sunken)}
+tr:last-child td{border-bottom:0}
+td.mono{white-space:nowrap;background:none;font-variant-numeric:tabular-nums}
+.settings{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+.ptoggle{display:flex;gap:8px;flex-wrap:wrap}
+.ptoggle label{display:flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:14px}
+.ptoggle input{accent-color:var(--accent)}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--danger-soft);padding:8px 10px;border-radius:8px;font-size:14px}
+.banner{font-size:13px;background:var(--warn-soft);border-radius:8px;padding:8px 10px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:14px;z-index:9}
+.empty{color:var(--muted);font-size:14px}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}
+  .rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:16px}
+  .phases{flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:4px}
+  .phases li{flex:0 0 auto}
+  .phases button{grid-template-columns:auto auto;width:auto;white-space:nowrap}
+  .phases button .n{display:none}
+  .views{padding:0 16px;top:env(safe-area-inset-top,0px)}
+  .wrap{padding-inline:16px}
+  .sb{padding-left:14px}
+  .fields{grid-template-columns:1fr}
+  h1{font-size:25px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand"><i></i>Yayın Paneli</div>
+    <div class="proj">
+      <span class="lbl">Proje</span>
+      <select id="projSel" aria-label="Proje seç"></select>
+      <div class="row"><button class="btn small" id="newProj">+ Yeni proje</button><span class="save" id="saveState">Yükleniyor…</span></div>
+    </div>
+    <div>
+      <div class="total"><span>Genel ilerleme</span><span id="totalTxt">0 / 0</span></div>
+      <div class="meter" style="margin-top:6px"><b id="totalBar" style="width:0"></b></div>
+    </div>
+    <div>
+      <span class="lbl">Aşamalar</span>
+      <ol class="phases" id="phaseList" style="margin-top:6px"></ol>
+    </div>
+    <div id="storeBanner" class="banner" hidden></div>
+  </aside>
+  <main>
+    <nav class="views" role="tablist" aria-label="Görünüm">
+      <button role="tab" data-view="list" aria-selected="true">Kontrol listesi</button>
+      <button role="tab" data-view="card" aria-selected="false">Bilgi kartı</button>
+      <button role="tab" data-view="sizes" aria-selected="false">Ölçüler ve limitler</button>
+      <button role="tab" data-view="settings" aria-selected="false">Proje ayarları</button>
+    </nav>
+    <div class="wrap" id="view"></div>
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ---------- Alanlar (form) ---------- */
+const GROUPS = [
+  ["genel","Genel"],["kimlik","Kimlik ve hesaplar"],["ios","App Store sayfası"],["play","Google Play sayfası"],
+  ["yasal","Yasal ve destek"],["teknik","Teknik"],["surum","Sürüm"]
+];
+const F = {
+  appName:{g:"genel",l:"Uygulama adı",max:30,h:"Her iki mağazada da en fazla 30 karakter."},
+  pitch:{g:"genel",l:"Tek cümlelik tanım",max:120,wide:1,h:"Uygulama ne yapıyor, kimin için? Tüm metinlerin çıkış noktası."},
+  audience:{g:"genel",l:"Hedef kitle / yaş",type:"select",opts:["","Herkes (13+)","Yetişkinler (18+)","Çocuklar dahil (13 altı)"]},
+  monetization:{g:"genel",l:"Gelir modeli",type:"select",opts:["","Ücretsiz","Ücretli","Uygulama içi satın alma","Abonelik","Reklam","Karma"]},
+  domain:{g:"genel",l:"Alan adı",type:"url",ph:"https://ornek.com"},
+
+  bundleId:{g:"kimlik",l:"iOS Bundle ID",p:"ios",ph:"com.sirket.uygulama",mono:1,h:"İlk yüklemeden sonra değiştirilemez."},
+  packageName:{g:"kimlik",l:"Android paket adı",p:"android",ph:"com.sirket.uygulama",mono:1,h:"Play'de kalıcıdır, asla değiştirilemez."},
+  appleTeamId:{g:"kimlik",l:"Apple Team ID",p:"ios",mono:1,ph:"10 karakter"},
+  appleAcct:{g:"kimlik",l:"Apple hesap türü",p:"ios",type:"select",opts:["","Bireysel","Kurumsal (D-U-N-S gerekli)"]},
+  playAcct:{g:"kimlik",l:"Play hesap türü",p:"android",type:"select",opts:["","Kişisel","Kurumsal (D-U-N-S gerekli)"]},
+  duns:{g:"kimlik",l:"D-U-N-S numarası",mono:1,ph:"9 haneli"},
+  sku:{g:"kimlik",l:"App Store SKU",p:"ios",mono:1,h:"Sadece sana görünen iç kod. Örn. UYG-2026-01"},
+  trader:{g:"kimlik",l:"AB tüccar (DSA) durumu",type:"select",opts:["","Tüccar değilim","Tüccarım (adres, telefon, e-posta AB'de görünür)"]},
+
+  iosName:{g:"ios",l:"Ad",p:"ios",max:30},
+  iosSubtitle:{g:"ios",l:"Alt başlık",p:"ios",max:30},
+  iosKeywords:{g:"ios",l:"Anahtar kelimeler",p:"ios",max:100,wide:1,h:"Virgülle ayır, boşluk bırakma. Addaki kelimeleri tekrar yazma."},
+  iosPromo:{g:"ios",l:"Promosyon metni",p:"ios",max:170,type:"textarea",wide:1,h:"İncelemeye girmeden istediğin zaman değiştirilebilir."},
+  iosDesc:{g:"ios",l:"Açıklama",p:"ios",max:4000,type:"textarea",wide:1,rows:8},
+  iosCat1:{g:"ios",l:"Birincil kategori",p:"ios"},
+  iosCat2:{g:"ios",l:"İkincil kategori",p:"ios"},
+  iosCopyright:{g:"ios",l:"Telif satırı",p:"ios",ph:"2026 Şirket Adı"},
+  reviewUser:{g:"ios",l:"İnceleme demo hesabı (kullanıcı adı)",p:"ios",h:"Parolayı buraya yazma; parola yöneticinde tut."},
+  reviewNotes:{g:"ios",l:"İnceleme notu",p:"ios",type:"textarea",wide:1,h:"Gizli özellikler, test adımları, donanım gereksinimi."},
+
+  playName:{g:"play",l:"Ad",p:"android",max:30},
+  playShort:{g:"play",l:"Kısa açıklama",p:"android",max:80,wide:1},
+  playFull:{g:"play",l:"Tam açıklama",p:"android",max:4000,type:"textarea",wide:1,rows:8},
+  playCat:{g:"play",l:"Kategori",p:"android"},
+  playTags:{g:"play",l:"Etiketler (en fazla 5)",p:"android"},
+  youtube:{g:"play",l:"Tanıtım videosu (YouTube)",p:"android",type:"url"},
+
+  privacyUrl:{g:"yasal",l:"Gizlilik politikası URL",type:"url",h:"Zorunlu. Herkese açık, PDF değil, giriş istemeyen bir sayfa."},
+  termsUrl:{g:"yasal",l:"Kullanım koşulları URL",type:"url",h:"Abonelik varsa Apple fiilen zorunlu tutar."},
+  supportUrl:{g:"yasal",l:"Destek URL",type:"url",h:"App Store'da zorunlu."},
+  marketingUrl:{g:"yasal",l:"Pazarlama URL",type:"url"},
+  supportEmail:{g:"yasal",l:"Destek e-postası",type:"email",h:"Play'de mağaza sayfasında herkese görünür."},
+  deleteUrl:{g:"yasal",l:"Hesap / veri silme URL",type:"url",h:"Hesap oluşturuluyorsa Play bu web bağlantısını ister."},
+  kvkk:{g:"yasal",l:"KVKK aydınlatma metni URL",type:"url"},
+
+  framework:{g:"teknik",l:"Teknoloji",type:"select",opts:["","Swift / SwiftUI","Kotlin / Compose","React Native (Expo)","React Native (bare)","Flutter","Diğer"]},
+  minIos:{g:"teknik",l:"Minimum iOS",p:"ios",ph:"17.0"},
+  minSdk:{g:"teknik",l:"minSdk",p:"android",ph:"24",mono:1},
+  targetSdk:{g:"teknik",l:"targetSdk",p:"android",mono:1},
+  keystoreWhere:{g:"teknik",l:"Upload keystore nerede yedekli?",p:"android",h:"Konum yaz (ör. 1Password kasası). Parolanın kendisini yazma."},
+  sha1:{g:"teknik",l:"SHA-1 / SHA-256 parmak izleri",p:"android",type:"textarea",wide:1,mono:1,h:"Hem upload key hem Play App Signing key için."},
+  push:{g:"teknik",l:"Bildirim servisi",ph:"FCM, OneSignal…"},
+  crash:{g:"teknik",l:"Hata / analitik aracı",ph:"Crashlytics, Sentry…"},
+  linkDomain:{g:"teknik",l:"Universal / App Links alan adı",mono:1},
+
+  version:{g:"surum",l:"Sürüm (kullanıcıya görünen)",mono:1,ph:"1.0.0"},
+  build:{g:"surum",l:"Build no / versionCode",mono:1,ph:"1",h:"Her yüklemede artmalı."},
+  releaseDate:{g:"surum",l:"Hedef yayın tarihi",type:"date"},
+  whatsNew:{g:"surum",l:"Sürüm notları",type:"textarea",wide:1,max:500,h:"Play 500, App Store 4000 karakter."}
+};
+
+/* ---------- Aşamalar ve adımlar ---------- */
+const PHASES = [
+{ id:"plan", t:"Fikir ve planlama", d:"Değiştirmesi zor kararları baştan ver: ad, kimlik, hedef kitle ve gelir modeli.", steps:[
+ {id:"name",t:"Adı seç ve uygunluğunu kontrol et",f:["appName","pitch","domain"],info:`<p>App Store'da aynı ada sahip iki uygulama olamaz; Play'de olabilir ama karışıklık yaratır. Adı ayırmadan önce iki mağazada ve <a href="https://www.turkpatent.gov.tr" target="_blank" rel="noopener">TÜRKPATENT</a>'te ara.</p><ul><li>Ad en fazla 30 karakter. Telefon ana ekranında yaklaşık 12 karakter görünür, bunun için iOS'ta <code>CFBundleDisplayName</code>, Android'de <code>android:label</code> ayrı ve kısa olabilir.</li><li>Alan adını ve sosyal medya kullanıcı adlarını aynı gün al.</li><li>Başka markaların adını (ör. "… for Instagram") kullanmak ret sebebidir.</li></ul>`},
+ {id:"ids",t:"Bundle ID ve paket adını belirle",must:1,f:["bundleId","packageName"],info:`<p>Ters alan adı biçimi kullan: <code>com.sirketadi.uygulama</code>. Küçük harf, rakam ve nokta ile sınırlı tut; tire Android'de geçmez.</p><p>İki platformda aynı değeri kullanmak işini kolaylaştırır (Firebase, deep link, analitik).</p>`,warn:"Bu değer ilk yüklemeden sonra hiçbir mağazada değiştirilemez. Yanlışsa yeni bir uygulama olarak baştan yayınlarsın."},
+ {id:"audience",t:"Hedef kitleyi ve yaş grubunu netleştir",f:["audience"],info:`<p>13 yaş altını hedeflemek Apple'da Kids kategorisi, Play'de Families politikası kurallarını getirir: üçüncü parti reklam ve analitikte ciddi kısıtlar, ebeveyn kapısı (parental gate) gibi.</p><p>Emin değilsen 13+ hedefle; çocuklara "yanlışlıkla" hitap eden görseller de (çizgi film karakterleri gibi) Play'in Families incelemesini tetikleyebilir.</p>`},
+ {id:"money",t:"Gelir modelini seç",f:["monetization"],info:`<ul><li>Dijital içerik ve özellik satışı uygulama içinde mağazanın ödeme sistemiyle yapılmak zorunda (Apple 3.1.1, Play Billing). Fiziksel ürün ve hizmet satışı bu kuralın dışında.</li><li>Komisyon standart %30; Apple Small Business Program ve Play'in ilk 1 milyon dolar için %15 oranı başvuruyla düşer. Aboneliklerde Play %15 uygular.</li><li>Play'de <b>ücretsiz yayınlanan uygulama sonradan ücretliye çevrilemez.</b></li><li>Reklam kullanacaksan iki mağazada da "reklam içerir" beyanı ve iOS'ta büyük ihtimalle ATT izni gerekir.</li></ul>`},
+ {id:"stack",t:"Teknolojiyi ve minimum OS sürümlerini seç",f:["framework","minIos","minSdk"],info:`<p>Minimum sürüm ne kadar düşükse kitle o kadar geniş, test yükü o kadar ağır. Makul bir başlangıç: iOS 17+, Android <code>minSdk 24</code> (Android 7). Expo/React Native ve Flutter'ın kendi alt sınırlarını kontrol et.</p>`},
+]},
+{ id:"accounts", t:"Hesaplar ve yasal", d:"Onay süreçleri günler sürebilir; geliştirmeye başlarken bu aşamayı paralel yürüt.", steps:[
+ {id:"apple",t:"Apple Developer Program'a kaydol",p:"ios",f:["appleAcct","appleTeamId","duns"],info:`<ul><li>Ücret yıllık 99 USD. Üyelik biterse uygulamaların mağazadan kalkar.</li><li>Bireysel hesapta satıcı adı olarak kendi adın görünür. Şirket adının görünmesini istiyorsan kurumsal hesap aç; bunun için şirketin D-U-N-S numarası gerekir (ücretsiz, birkaç gün ile iki hafta sürebilir).</li><li>Apple ID'de iki adımlı doğrulama açık olmalı.</li></ul>`,links:[["developer.apple.com/programs","https://developer.apple.com/programs/"]]},
+ {id:"google",t:"Google Play Console hesabı aç",p:"android",f:["playAcct","duns"],info:`<ul><li>Tek seferlik 25 USD. Kimlik doğrulaması ve bir Android cihazdan Play Console uygulamasıyla cihaz doğrulaması istenir.</li><li><b>Kişisel hesaplarda</b> üretime çıkmadan önce en az 12 test kullanıcısıyla 14 gün kesintisiz kapalı test zorunlu. Test kullanıcılarını şimdiden toplamaya başla.</li><li>Kurumsal hesapta bu şart yok, ama D-U-N-S ve kurumsal doğrulama gerekir.</li></ul>`,warn:"12 kişi × 14 gün kuralı kişisel hesaplarda yayını en az iki hafta geciktirir. Takvimini buna göre kur.",links:[["play.google.com/console","https://play.google.com/console"]]},
+ {id:"agreements",t:"Sözleşme, vergi ve banka bilgilerini tamamla",info:`<ul><li><b>App Store Connect → Business</b>: ücretli uygulama veya satın alma varsa "Paid Apps" sözleşmesini kabul et, vergi formunu (ABD dışı için W-8BEN) ve banka hesabını gir. Eksikse uygulama içi ürünler "Ready to Submit" olmaz.</li><li><b>Play Console → Ödeme profili</b>: satıcı hesabı bilgileri ve banka hesabı.</li><li>Gelir elde edeceksen vergi mükellefiyeti ve yazılım ihracatı istisnaları için mali müşavirine danış.</li></ul>`},
+ {id:"dsa",t:"AB tüccar (DSA) beyanını yap",f:["trader"],info:`<p>AB'de dağıtım için iki mağaza da "tüccar mısın?" diye sorar. Uygulamadan para kazanıyorsan genellikle tüccar sayılırsın; o zaman adres, telefon ve e-posta AB mağaza sayfasında herkese açık görünür.</p><p>Kişisel adresini göstermek istemiyorsan sanal ofis adresi veya şirket hesabı düşün. Beyan yapılmazsa uygulama AB ülkelerinde yayınlanmaz.</p>`},
+ {id:"legal",t:"Gizlilik politikası ve koşulları yayınla",must:1,f:["privacyUrl","termsUrl","kvkk"],info:`<p>Gizlilik politikası iki mağazada da zorunlu ve uygulamanın içinden de erişilebilir olmalı. İçerikte bulunması gerekenler: hangi veriler toplanıyor, neden, kimlerle (SDK'lar dahil) paylaşılıyor, ne kadar saklanıyor, kullanıcı nasıl silme talep eder, iletişim adresi.</p><p>Türkiye'deki kullanıcılar için KVKK aydınlatma metni ve gerekiyorsa açık rıza metni hazırla. Yurt dışındaki sunuculara (Firebase vb.) veri aktarımını metinde belirt.</p>`},
+ {id:"support",t:"Destek sayfası ve e-postasını hazırla",f:["supportUrl","supportEmail","marketingUrl"],info:`<p>App Store destek URL'si zorunlu; basit bir SSS ve iletişim formu yeterli. Destek e-postası Play'de herkese görünür, ayrı bir adres (ör. <code>destek@</code>) aç.</p>`},
+]},
+{ id:"build", t:"Geliştirme gereksinimleri", d:"Kod yazarken unutulan ve incelemede geri dönen özellikler.", steps:[
+ {id:"env",t:"Ortamları ve gizli anahtarları ayır",info:`<p>Geliştirme, test ve canlı ortam için ayrı API adresleri, Firebase projeleri ve anahtarlar kullan. Anahtarları repoya koyma; CI'da gizli değişken olarak tut. Canlı build'de debug menüleri, test butonları ve log'ların kapalı olduğunu kontrol et.</p>`},
+ {id:"icon",t:"Uygulama ikonunu hazırla",must:1,info:`<ul><li><b>iOS</b>: 1024×1024 PNG, saydamlık yok, köşeler yuvarlatılmamış. Xcode 26 ile Icon Composer katmanlı ikon (açık, koyu, renkli modlar) üretir.</li><li><b>Android</b>: adaptive icon, 108×108 dp ön ve arka katman; logo ortadaki 66 dp güvenli alanda kalmalı. Android 13+ için tek renk (monochrome) katman ekle.</li><li><b>Play mağaza ikonu</b>: 512×512, 32-bit PNG, en fazla 1 MB.</li></ul><p>Ölçüler sekmesinde tam liste var.</p>`},
+ {id:"splash",t:"Açılış ekranını (splash) ayarla",info:`<p>iOS'ta Launch Screen zorunlu. Android 12+ sistem splash API'sini kullanır; ikon ortada, arka plan rengi sen belirlersin. Splash'te reklam veya uzun bekleme koyma.</p>`},
+ {id:"perms",t:"İzin açıklamalarını yaz",info:`<p>Kamera, konum, mikrofon, fotoğraf, kişiler gibi her izin için iOS <code>Info.plist</code>'e açıklayıcı bir metin yazılmalı (<code>NSCameraUsageDescription</code> vb.). "Uygulama kamerayı kullanır" gibi genel metinler ret sebebi; neden gerektiğini somut yaz ve tüm dillerde çevir.</p><p>Android'de sadece kullandığın izinleri manifestte bırak. Arka plan konumu, SMS, arama kaydı, tüm dosyalara erişim gibi hassas izinler Play'de ayrıca beyan formu ve video ister.</p>`},
+ {id:"privacyManifest",t:"Privacy manifest dosyasını ekle",p:"ios",info:`<p><code>PrivacyInfo.xcprivacy</code> dosyası: toplanan veri türleri, takip alan adları ve "required reason API" kullanımının gerekçeleri (UserDefaults, dosya zaman damgası, disk alanı, sistem açılış süresi).</p><p>Kullandığın üçüncü parti SDK'ların da kendi manifestini içeren güncel sürümlerde olduğunu kontrol et. Eksikse yükleme sonrası Apple e-posta ile uyarır ve build reddedilebilir.</p>`},
+ {id:"delete",t:"Uygulama içinden hesap silme",must:1,f:["deleteUrl"],info:`<p>Uygulamada hesap oluşturulabiliyorsa, hesabın <b>uygulama içinden</b> silinebilmesi zorunlu (Apple 5.1.1(v)). Sadece "bize e-posta atın" kabul edilmez. Play ayrıca uygulama dışından erişilebilen bir silme talep sayfası (web URL) ister.</p><p>Sign in with Apple kullanıyorsan silme sırasında Apple token'ını da iptal et (revoke).</p>`},
+ {id:"login",t:"Giriş yöntemlerini mağaza kurallarına uydur",info:`<p>Google, Facebook gibi üçüncü parti girişler sunuyorsan iOS'ta e-postayı gizleme seçeneği olan gizlilik odaklı bir alternatif de sunmalısın; pratikte bu Sign in with Apple demek (4.8).</p><p>Uygulama giriş olmadan bir şey göstermiyorsa inceleme için demo hesap hazırla.</p>`},
+ {id:"push",t:"Bildirimleri kur",f:["push"],info:`<ul><li>iOS: Apple Developer'da APNs Auth Key (<code>.p8</code>) oluştur; süresi dolmaz, tek seferlik indirilir, yedekle. Push Notifications capability'sini aç.</li><li>Android 13+ için <code>POST_NOTIFICATIONS</code> çalışma zamanı izni iste.</li><li>İzni ilk açılışta değil, değerini anlattıktan sonra iste.</li></ul>`},
+ {id:"links",t:"Deep link / Universal Links",f:["linkDomain"],info:`<ul><li>iOS: alan adında <code>/.well-known/apple-app-site-association</code> (uzantısız, JSON, HTTPS) ve Associated Domains capability.</li><li>Android: <code>/.well-known/assetlinks.json</code> içinde paket adı ve <b>Play App Signing</b> anahtarının SHA-256 parmak izi. Sadece upload anahtarını yazarsan mağazadan indirilen sürümde linkler açılmaz.</li></ul>`},
+ {id:"analytics",t:"Hata takibi ve analitiği ekle",f:["crash"],info:`<p>İlk sürümden önce crash raporlama (Crashlytics, Sentry) şart; yayından sonra eklemek ilk kullanıcıların sorunlarını kaçırmak demek. Eklediğin her SDK'yı gizlilik formlarına yansıtmayı unutma.</p>`},
+ {id:"iap",t:"Uygulama içi ürünleri tanımla",info:`<p>App Store Connect'te ve Play Console'da ürün ID'lerini, fiyatları, abonelik gruplarını ve yerelleştirilmiş adları oluştur. iOS'ta ilk ürün uygulamanın ilk sürümüyle birlikte incelemeye gönderilmeli.</p><p>Abonelik ekranında fiyat, süre, otomatik yenileme, Kullanım Koşulları ve Gizlilik bağlantıları ve "Satın alımları geri yükle" butonu görünür olmalı.</p>`},
+ {id:"a11y",t:"Dil, erişilebilirlik ve görünüm kontrolleri",info:`<ul><li>Büyük yazı tipi (Dynamic Type / font scale) ile ekranlar taşmıyor mu?</li><li>Koyu modda okunmayan metin var mı?</li><li>Ekran okuyucu butonlara anlamlı ad okuyor mu?</li><li>Mağaza sayfasını çevirdiğin her dilde uygulama da çevrili mi?</li></ul>`},
+]},
+{ id:"sign", t:"İmzalama ve build", d:"Kaybedilirse en çok can yakan dosyalar burada. Her şeyi yedekle.", steps:[
+ {id:"iosCert",t:"Sertifika, App ID ve provisioning profile",p:"ios",info:`<ul><li>Developer hesabında Bundle ID ile bir App ID oluştur ve kullanacağın capability'leri işaretle (Push, Sign in with Apple, Associated Domains, In-App Purchase…).</li><li>"Apple Distribution" sertifikası 1 yıl geçerli. Xcode'da otomatik imzalama ya da EAS / fastlane match bunu senin için yönetebilir.</li><li>Sertifikanın süresi dolması yayındaki uygulamayı etkilemez, sadece yeni yüklemeyi engeller.</li></ul>`},
+ {id:"keystore",t:"Upload keystore oluştur ve yedekle",p:"android",must:1,f:["keystoreWhere","sha1"],info:`<p>Play App Signing ile Google uygulamanın asıl imza anahtarını saklar, sen sadece <b>upload key</b> ile imzalarsın. Keystore dosyasını ve parolalarını parola yöneticisinde ve en az bir ayrı yerde yedekle.</p><p>Firebase, Google Sign-In ve Maps için hem upload key'in hem Play App Signing key'in SHA-1 ve SHA-256 parmak izlerini kaydet (Play Console → Uygulama bütünlüğü).</p>`,warn:"Upload key kaybolursa Play desteğinden sıfırlama istenebilir ama günler sürer. Play App Signing kapalı eski bir uygulamada anahtar kaybı uygulamayı güncellenemez hale getirir."},
+ {id:"versions",t:"Sürüm ve build numaralarını ayarla",f:["version","build"],info:`<ul><li>iOS: <code>CFBundleShortVersionString</code> (1.0.0) ve <code>CFBundleVersion</code> (build). Aynı sürüm için build numarası her yüklemede artmalı.</li><li>Android: <code>versionName</code> ve <code>versionCode</code>. versionCode bir tamsayı ve her yüklemede bir öncekinden büyük olmalı; kullanılan değer bir daha kullanılamaz.</li></ul>`},
+ {id:"sdkreq",t:"Mağazaların SDK zorunluluklarını kontrol et",f:["targetSdk"],info:`<ul><li><b>Play</b>: yeni uygulama ve güncellemeler her yıl 31 Ağustos'ta yükseltilen bir <code>targetSdk</code> seviyesini hedeflemeli (2025'te API 35 idi). Güncel değeri Play Console'daki uyarıdan doğrula.</li><li><b>Play</b>: Android 15+ hedefleyen uygulamalar 16 KB bellek sayfası boyutunu desteklemeli; native kütüphane (NDK, bazı RN/Flutter eklentileri) kullanıyorsan güncel sürümlere geç.</li><li><b>Apple</b>: her ilkbaharda yüklemeler için en güncel Xcode ve SDK zorunlu hale gelir (2026'da Xcode 26 / iOS 26 SDK).</li></ul>`},
+ {id:"encryption",t:"Şifreleme (export compliance) beyanı",p:"ios",info:`<p>Sadece HTTPS ve sistem şifrelemesi kullanıyorsan <code>Info.plist</code>'e <code>ITSAppUsesNonExemptEncryption = NO</code> ekle; her build'de soru sorulmaz. Özel şifreleme algoritması kullanıyorsan ek belge gerekebilir.</p>`},
+ {id:"releaseBuild",t:"Release build al ve yükle",info:`<ul><li><b>iOS</b>: Xcode → Product → Archive → Distribute App, veya Transporter, fastlane ya da <code>eas submit</code>. Yükleme sonrası işlenmesi 10–30 dk sürer.</li><li><b>Android</b>: Play artık APK değil <b>AAB</b> (<code>bundleRelease</code>) kabul eder. R8 küçültme açıksa mapping dosyasını da yükle ki çökme raporları okunabilsin.</li></ul>`},
+]},
+{ id:"listing", t:"Mağaza sayfası", d:"Metinleri burada yaz, karakter sayaçlarıyla sınırları takip et.", steps:[
+ {id:"ascCreate",t:"App Store Connect'te uygulamayı oluştur",p:"ios",f:["iosName","sku"],info:`<p>My Apps → + → New App: platform, ad, birincil dil, Bundle ID, SKU. Ad bu anda rezerve edilir; kullanılmayan rezervasyonlar bir süre sonra düşebilir.</p>`},
+ {id:"playCreate",t:"Play Console'da uygulamayı oluştur",p:"android",f:["playName"],info:`<p>Uygulama oluştur: ad, varsayılan dil, uygulama mı oyun mu, ücretsiz mi ücretli mi. Ardından "Kontrol paneli"ndeki kurulum görevleri listesini takip et; bu paneldeki adımlar o listeyle eşleşir.</p>`},
+ {id:"iosText",t:"App Store metinlerini yaz",p:"ios",f:["iosSubtitle","iosKeywords","iosPromo","iosDesc","iosCopyright"],info:`<ul><li>Arama sıralamasında ad, alt başlık ve anahtar kelimeler sayılır; açıklama sayılmaz.</li><li>Anahtar kelimelerde tekrar, rakip adı ve kategori adı kullanma.</li><li>Açıklamanın ilk 2–3 satırı "devamı" demeden görünür; en güçlü cümleni oraya koy.</li></ul>`},
+ {id:"playText",t:"Play metinlerini yaz",p:"android",f:["playShort","playFull","playTags","youtube"],info:`<ul><li>Play'de tam açıklama aramada sayılır; anahtar kelimeleri doğal cümlelerle kullan, listeleme yapma.</li><li>Ad ve kısa açıklamada "en iyi", "#1", "ücretsiz" gibi ifadeler, emoji ve büyük harf yazımı politika ihlalidir.</li></ul>`},
+ {id:"category",t:"Kategori ve iletişim bilgilerini seç",f:["iosCat1","iosCat2","playCat"],info:`<p>Kategoriyi rakiplerin nerede durduğuna bakarak seç. Kalabalık kategoride listelerde görünmek zordur, ama yanlış kategori de ret sebebi olabilir.</p>`},
+ {id:"shots",t:"Ekran görüntülerini hazırla",must:1,info:`<ul><li><b>iOS</b>: 6.9 inç iPhone (1320×2868 veya 1290×2796) zorunlu, 1–10 adet. iPad destekliyorsan 13 inç iPad (2064×2752 veya 2048×2732) da zorunlu. Daha küçük boyutlar otomatik ölçeklenir.</li><li><b>Play</b>: telefon için 2–8 adet, kenarlar 320–3840 px, en-boy oranı 2:1'i geçmemeli. Öne çıkarılma için en az 4 adet, 1080 px+ önerilir. Tablet görüntüleri büyük ekran listeleri için gerekli.</li><li>Görsellerde gerçek uygulama arayüzü görünmeli; başka bir cihazın çerçevesi veya platformun logosu olmamalı.</li></ul>`},
+ {id:"feature",t:"Play öne çıkan görseli (feature graphic)",p:"android",must:1,info:`<p>1024×500 JPEG veya 24-bit PNG (saydamlık yok). Video eklersen bu görselin üstünde oynat butonu çıkar; önemli metni kenarlara koyma.</p>`},
+ {id:"preview",t:"Tanıtım videosu (isteğe bağlı)",info:`<p>iOS App Preview: 15–30 saniye, en fazla 3 adet, sadece uygulama içi kayıt. Play: YouTube bağlantısı, reklamsız ve herkese açık/liste dışı olmalı.</p>`},
+ {id:"rating",t:"Yaş derecelendirme anketini doldur",must:1,info:`<p>Apple'ın anketi 2025'te güncellendi; dereceler 4+, 9+, 13+, 16+, 18+. Play'de IARC anketi her ülke için derece üretir. Kullanıcıların birbirine mesaj atabildiği, kullanıcı içeriği barındıran veya web görüntüleyen uygulamalarda cevapları dikkatli ver.</p>`},
+ {id:"pricing",t:"Fiyat ve dağıtım ülkelerini seç",info:`<p>Hangi ülkelerde yayınlanacağını seç. Bazı ülkeler ek belge ister (ör. Çin'de oyunlar ve belirli kategoriler için lisans, Güney Kore'de oyun derecelendirmesi). Emin değilsen başlangıçta bu ülkeleri hariç tut.</p>`},
+]},
+{ id:"privacy", t:"Gizlilik ve içerik beyanları", d:"Reddedilmelerin büyük kısmı bu formlardaki tutarsızlıktan gelir.", steps:[
+ {id:"sdklist",t:"Kullandığın SDK'ların veri envanterini çıkar",info:`<p>Formları doldurmadan önce bir liste yap: her SDK (Firebase, Sentry, reklam ağları, ödeme, harita) hangi veriyi topluyor, cihazdan çıkıyor mu, takip amaçlı mı. Çoğu SDK'nın "Apple privacy" ve "Play Data safety" belgeleri var. Bu liste hem Apple hem Google formunun kaynağı olur.</p>`},
+ {id:"appPrivacy",t:"App Store 'App Privacy' bölümünü doldur",p:"ios",must:1,info:`<p>Toplanan her veri türü için: kullanıcıya bağlı mı, takip için mi kullanılıyor, amacı ne. Privacy manifest dosyasıyla ve gizlilik politikasıyla tutarlı olmalı.</p>`},
+ {id:"att",t:"App Tracking Transparency gerekiyor mu?",p:"ios",info:`<p>Başka şirketlerin uygulama ve sitelerinden toplanan verilerle birleştirme, reklam ölçümü için IDFA kullanma gibi "takip" yapıyorsan ATT izni göstermek zorunlu. İzin istemeden takip yapmak veya izin karşılığında ödül vermek ret sebebi.</p>`},
+ {id:"dataSafety",t:"Play 'Veri güvenliği' formunu doldur",p:"android",must:1,info:`<p>Toplanan ve paylaşılan veri türleri, şifreli aktarım, silme talebi imkânı. Google, uygulamanın gerçek davranışını (SDK'lar dahil) bu formla karşılaştırır; tutarsızlıkta güncelleme reddedilir veya uyarı gelir.</p>`},
+ {id:"appContent",t:"Play 'Uygulama içeriği' beyanlarını tamamla",p:"android",info:`<p>Gizlilik politikası, reklam, uygulama erişimi (giriş bilgileri), içerik derecelendirmesi, hedef kitle, haber uygulaması mı, devlet uygulaması mı, finansal özellikler, sağlık, veri güvenliği, hesap silme. Kontrol panelinde hepsi tamamlanmadan üretime gönderemezsin.</p>`},
+ {id:"reviewInfo",t:"İnceleme ekibi için demo hesap ve not hazırla",must:1,f:["reviewUser","reviewNotes"],info:`<p>Giriş gerekiyorsa çalışan ve süresi dolmayan bir demo hesap ver (Apple: App Review Information; Play: Uygulama erişimi). SMS doğrulaması, davet kodu veya özel donanım gerekiyorsa nasıl geçileceğini nota yaz. İnceleme sırasında hesabın kilitlenmediğinden emin ol.</p>`},
+]},
+{ id:"test", t:"Test dağıtımı", d:"Mağazaya çıkmadan önce gerçek cihazlarda, gerçek imzayla dene.", steps:[
+ {id:"tfInternal",t:"TestFlight dahili test",p:"ios",info:`<p>App Store Connect ekibindeki en fazla 100 kişi, inceleme beklemeden test edebilir. Build'ler 90 gün sonra sona erer.</p>`},
+ {id:"tfExternal",t:"TestFlight harici test",p:"ios",info:`<p>10.000 kişiye kadar, e-posta ya da herkese açık bağlantıyla. Her sürümün ilk build'i kısa bir beta incelemesinden geçer. "Test edilecekler" notu yaz.</p>`},
+ {id:"playInternal",t:"Play dahili test",p:"android",info:`<p>En fazla 100 test kullanıcısı, dakikalar içinde yayınlanır. İlk AAB'yi buraya yükleyip Play App Signing'i doğrulamak için iyi bir yer.</p>`},
+ {id:"playClosed",t:"Play kapalı test (12 kişi, 14 gün)",p:"android",info:`<p>Kişisel hesaplarda üretim erişimi için zorunlu: en az 12 kişi testi kabul etmiş olmalı ve son 14 gün boyunca katılımda kalmalı. Sonra Play Console "Üretime erişim başvurusu" ister; test sırasında aldığın geri bildirimleri ve yaptığın değişiklikleri soru formunda anlatırsın.</p>`,warn:"Test kullanıcıları gruptan ayrılırsa 14 gün sayacı etkilenebilir. Yakın çevrene katılımın iki hafta sürdüğünü söyle."},
+ {id:"prelaunch",t:"Ön lansman raporunu incele",p:"android",info:`<p>Play, kapalı/açık teste yüklenen her build'i gerçek cihazlarda otomatik dolaşır: çökmeler, erişilebilirlik, güvenlik uyarıları ve ekran görüntüleri. Raporu kontrol etmeden üretime gönderme.</p>`},
+ {id:"matrix",t:"Kritik akışları gerçek cihazda dene",info:`<ul><li>İlk kurulum, kayıt, giriş, şifre sıfırlama, hesap silme</li><li>Satın alma ve geri yükleme (sandbox / lisans test kullanıcısı ile)</li><li>Bildirim gelişi; uygulama kapalıyken ve açıkken</li><li>Uçak modu, yavaş ağ, izni reddetme senaryoları</li><li>Eski bir sürümden güncelleme (veri kaybı olmamalı)</li><li>Küçük ekran, büyük ekran ve tablet</li></ul>`},
+]},
+{ id:"review", t:"İnceleme ve yayın", d:"Göndermeden önce son kontrol, sonra kontrollü açılış.", steps:[
+ {id:"rejections",t:"Sık ret sebeplerini tara",info:`<ul><li><b>2.1</b> Eksik uygulama: çökme, boş ekran, "yakında" bölümleri, örnek metin.</li><li><b>2.3</b> Yanıltıcı metadata: ekran görüntüleri gerçek uygulamayla uyuşmuyor.</li><li><b>4.2</b> Minimum işlevsellik: sadece bir web sitesini saran uygulama.</li><li><b>5.1.1</b> Gereksiz veri isteme, hesap silme eksikliği, zorunlu olmayan kayıt.</li><li><b>3.1.1</b> Dijital içerik için dış ödeme bağlantısı.</li><li>Play: veri güvenliği formu ile gerçek davranış uyuşmazlığı, izin politikası, yanıltıcı ikon/ad.</li></ul>`},
+ {id:"iosSubmit",t:"App Store'a incelemeye gönder",p:"ios",info:`<p>Build'i sürüme ekle, yayın seçeneğini belirle: incelemeden sonra otomatik, manuel, veya belirli bir tarihten önce değil. İnceleme genellikle 24–48 saat sürer. Ret gelirse Resolution Center'dan yanıt verebilir, gerekirse itiraz edebilirsin.</p>`},
+ {id:"phased",t:"Kademeli yayını aç (iOS)",p:"ios",info:`<p>Phased Release otomatik güncellemeleri 7 güne yayar (%1, 2, 5, 10, 20, 50, 100). Yeni indirmeler etkilenmez. Sorun görürsen 30 güne kadar durdurabilirsin. İlk sürümde etkisi yoktur, güncellemeler için kullan.</p>`},
+ {id:"playSubmit",t:"Play üretim sürümünü gönder",p:"android",f:["whatsNew"],info:`<p>Üretim → Yeni sürüm → AAB seç → sürüm notları → incele ve yayınla. İnceleme birkaç saatten birkaç güne sürebilir; yeni hesaplarda daha uzun. "Yönetilen yayınlama" açarsan onaydan sonra yayın anını sen seçersin.</p>`},
+ {id:"rollout",t:"Kademeli dağıtım yüzdesini belirle (Play)",p:"android",info:`<p>Güncellemelerde %5–20 ile başlayıp Android vitals'ı izleyerek artır. Sorun çıkarsa dağıtımı durdurabilirsin; ama kullanıcıların cihazındaki sürümü geri alamazsın, düzeltme için daha yüksek versionCode ile yeni build gerekir.</p>`},
+ {id:"launchDay",t:"Yayın günü hazırlığı",f:["releaseDate"],info:`<ul><li>Mağaza bağlantılarını (apps.apple.com/app/id…, play.google.com/store/apps/details?id=…) web sitene ve sosyal medyaya ekle.</li><li>Sunucu kapasitesini, rate limit'leri ve ücretli API kotalarını kontrol et.</li><li>Destek e-postasını o hafta sık kontrol et.</li></ul>`},
+]},
+{ id:"post", t:"Yayın sonrası", d:"Yayın bir başlangıç. Düzenli bakım takvimin burada.", steps:[
+ {id:"vitals",t:"Çökme ve ANR oranlarını izle",info:`<p>Play, kullanıcıların algıladığı çökme oranı %1,09 veya ANR oranı %0,47'yi geçerse uygulamanın görünürlüğünü düşürebilir ve sayfada uyarı gösterebilir. Xcode Organizer ve App Store Connect'te de çökme raporlarını takip et.</p>`},
+ {id:"reviews",t:"Yorumlara yanıt ver",info:`<p>Her iki mağaza da geliştirici yanıtına izin verir. Düşük puanlı yorumlara düzeltme sonrası yanıt vermek kullanıcıyı puanını güncellemeye teşvik eder. Puan istemek için sadece sistem API'lerini kullan (<code>SKStoreReviewController</code>, Play In-App Review); kendi "5 yıldız ver" ekranın politika ihlali.</p>`},
+ {id:"aso",t:"Mağaza sayfasını iyileştir (ASO)",info:`<p>App Store'da Product Page Optimization ve Custom Product Pages, Play'de Store listing experiments ile ikon ve ekran görüntüsü varyasyonlarını A/B test et. Promosyon metnini kampanyalara göre güncelle.</p>`},
+ {id:"renewals",t:"Yenileme takvimini kur",info:`<ul><li>Apple Developer üyeliği: yıllık</li><li>Apple Distribution sertifikası ve provisioning profile: yıllık</li><li>Push sertifikası (.p12 kullanıyorsan): yıllık. <code>.p8</code> anahtarının süresi yoktur.</li><li>Alan adı ve SSL sertifikası</li><li>Play targetSdk zorunluluğu: her yıl Ağustos</li><li>Apple yaş derecelendirmesi ve gizlilik beyanları: SDK değiştikçe</li></ul>`},
+ {id:"updates",t:"Güncelleme ritmini belirle",info:`<p>Düzenli küçük güncellemeler hem hata düzeltme hem mağaza sıralaması için iyidir. Her güncellemede: sürüm/build artır, sürüm notu yaz, gizlilik formlarını SDK değişikliklerine göre gözden geçir, ekran görüntüleri hâlâ doğru mu bak.</p>`},
+]}
+];
+
+/* ---------- Durum ---------- */
+const S = { projects:{}, order:[], cur:null, view:"list", phase:0, open:{}, store:"local", col:null, confirmDel:false, downloads:null };
+const LS = "yayin-paneli-v1";
+const ls = { get(k){try{return JSON.parse(localStorage.getItem(LS+k))}catch{return null}}, set(k,v){try{localStorage.setItem(LS+k,JSON.stringify(v))}catch{}} };
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const uid = () => "p-" + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+function newProject(name){ return {id:uid(), name:name||"Yeni uygulamam", ios:true, android:true, created:Date.now(), updated:Date.now(), done:{}, fields:{}, notes:{}, _draft:true}; }
+const P = () => S.projects[S.cur];
+const applies = (x,p=P()) => !x.p || (x.p==="ios"?p.ios:p.android);
+function phaseStats(ph,p=P()){ const st=ph.steps.filter(s=>applies(s,p)); return {total:st.length, done:st.filter(s=>p.done[s.id]).length}; }
+
+/* ---------- Kayıt ---------- */
+let saveTimer=null, flushing=false, pending=new Set();
+function setSave(t){ $("#saveState").textContent=t; }
+function touch(p){ p.updated=Date.now(); if(p._draft){ delete p._draft; } pending.add(p.id); setSave("Kaydediliyor…"); clearTimeout(saveTimer); saveTimer=setTimeout(flush,700); }
+function plain(p){ const {_draft,id,...rest}=p; return JSON.parse(JSON.stringify(rest)); }
+async function flush(){
+  if(flushing){ clearTimeout(saveTimer); saveTimer=setTimeout(flush,400); return; }
+  flushing=true;
+  const ids=[...pending]; pending.clear();
+  let ok=true;
+  if(S.store==="db"){
+    for(const id of ids){ const p=S.projects[id]; if(!p) continue;
+      try{ await S.col.doc(id).set(plain(p)); }
+      catch(e){ ok=false; if(e&&e.code==="unavailable"){ pending.add(id); } else { toast("Kaydedilemedi: "+(e&&e.message||"bilinmeyen hata")); } } }
+  } else saveLocal();
+  flushing=false;
+  if(pending.size){ saveTimer=setTimeout(flush,1500); } else setSave(ok? (S.store==="db"?"Kaydedildi":"Bu tarayıcıya kaydedildi") : "Kayıt hatası");
+}
+function saveLocal(){ const out={}; for(const id of S.order){ const p=S.projects[id]; if(!p._draft) out[id]=plain(p); } ls.set(":projects",out); }
+async function removeProject(id){
+  delete S.projects[id]; S.order=S.order.filter(x=>x!==id); pending.delete(id);
+  if(S.store==="db"){ try{ await S.col.doc(id).delete(); }catch(e){ toast("Silinemedi: "+(e&&e.message||"")); } } else saveLocal();
+  if(!S.order.length){ const p=newProject(); S.projects[p.id]=p; S.order.push(p.id); }
+  S.cur=S.order[0]; S.confirmDel=false; S.view="list"; render(); toast("Proje silindi");
+}
+function loadInto(map){
+  const draft = P() && P()._draft && !Object.keys(P().done).length ? null : P();
+  S.projects={}; S.order=[];
+  Object.entries(map).sort((a,b)=>(a[1].created||0)-(b[1].created||0)).forEach(([id,d])=>{ S.projects[id]={id,done:{},fields:{},notes:{},ios:true,android:true,...d}; S.order.push(id); });
+  if(draft && !S.projects[draft.id]){ S.projects[draft.id]=draft; S.order.push(draft.id); }
+  if(!S.order.length){ const p=newProject(); S.projects[p.id]=p; S.order.push(p.id); }
+  const last=ls.get(":cur"); S.cur = S.projects[last]? last : S.order[0];
+}
+async function initStore(){
+  let db=null,user=null;
+  try{ if(window.claude && window.claude.use){ [db,user]=await Promise.all([window.claude.use("db"),window.claude.use("user")]); } }catch{}
+  let id=null; try{ id = user ? await user.id() : null; }catch{}
+  if(db && id){
+    try{
+      S.col=db.collection("data/users/"+id);
+      const snap=await S.col.get(); const map={}; snap.docs.forEach(d=>{ if(d.exists) map[d.id]=d.data(); });
+      S.store="db"; loadInto(map); setSave("Hesabına kaydediliyor"); render(); return;
+    }catch(e){ S.col=null; }
+  }
+  S.store="local"; loadInto(ls.get(":projects")||{});
+  const b=$("#storeBanner"); b.hidden=false; b.textContent="Hesap depolaması bu görünümde açık değil. Veriler sadece bu tarayıcıda tutuluyor; Bilgi kartı sekmesinden yedek alabilirsin.";
+  setSave("Bu tarayıcıda"); render();
+}
+async function initDownloads(){ try{ if(window.claude&&window.claude.use){ S.downloads=await window.claude.use("downloads"); if(S.view==="card") render(); } }catch{} }
+
+/* ---------- Görünüm ---------- */
+const chev = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const pchip = p => p==="ios"?`<span class="chip ios">iOS</span>`:p==="android"?`<span class="chip android">Android</span>`:"";
+
+function fieldHTML(k){
+  const f=F[k]; if(!f) return ""; const p=P(); if(f.p && !applies(f)) return "";
+  const v=p.fields[k]||""; const id="f-"+k; const cls=(f.wide||f.type==="textarea")?"fld wide":"fld";
+  const cnt = f.max?`<span class="cnt${v.length>f.max?" over":""}" id="c-${k}">${v.length}/${f.max}</span>`:"";
+  let ctl;
+  if(f.type==="select") ctl=`<select id="${id}" data-k="${k}">${f.opts.map(o=>`<option${o===v?" selected":""} value="${esc(o)}">${o?esc(o):"Seç…"}</option>`).join("")}</select>`;
+  else if(f.type==="textarea") ctl=`<textarea id="${id}" data-k="${k}" rows="${f.rows||3}"${f.mono?' style="font-family:var(--f-mono);font-size:13px"':""}>${esc(v)}</textarea>`;
+  else ctl=`<input id="${id}" data-k="${k}" type="${f.type||"text"}" value="${esc(v)}" placeholder="${esc(f.ph||"")}"${f.mono?' style="font-family:var(--f-mono);font-size:13px"':""}>`;
+  return `<div class="${cls}"><label for="${id}"><span>${esc(f.l)} ${f.p?pchip(f.p):""}</span>${cnt}</label>${ctl}${f.h?`<span class="hint">${esc(f.h)}</span>`:""}</div>`;
+}
+
+function renderRail(){
+  const sel=$("#projSel");
+  sel.innerHTML=S.order.map(id=>`<option value="${id}"${id===S.cur?" selected":""}>${esc(S.projects[id].name||"Adsız")}</option>`).join("");
+  let T=0,D=0;
+  $("#phaseList").innerHTML=PHASES.map((ph,i)=>{ const s=phaseStats(ph); T+=s.total; D+=s.done;
+    return `<li><button data-phase="${i}" aria-current="${S.view==="list"&&S.phase===i}" class="${s.total&&s.done===s.total?"full":""}"><span class="n">${String(i+1).padStart(2,"0")}</span><span>${esc(ph.t)}</span><span class="c">${s.done}/${s.total}</span></button></li>`; }).join("");
+  $("#totalTxt").textContent=`${D} / ${T}`; $("#totalBar").style.width=(T?Math.round(D/T*100):0)+"%";
+  document.querySelectorAll(".views button").forEach(b=>b.setAttribute("aria-selected",b.dataset.view===S.view));
+}
+
+function renderList(){
+  const ph=PHASES[S.phase], p=P(), s=phaseStats(ph);
+  const steps=ph.steps.filter(x=>applies(x));
+  return `<p class="lbl" style="margin:0 0 4px">Aşama ${S.phase+1} / ${PHASES.length} · ${s.done}/${s.total} tamam</p>
+  <h1>${esc(ph.t)}</h1><p class="lead">${esc(ph.d)}</p>
+  <div class="toolbar"><button class="btn small" data-act="expandAll">Tümünü aç</button><button class="btn small" data-act="collapseAll">Tümünü kapat</button>
+  ${!p.ios||!p.android?`<span class="hint">${p.ios?"Sadece iOS":"Sadece Android"} adımları gösteriliyor. Proje ayarlarından değiştir.</span>`:""}</div>
+  <div class="steps">${steps.map(st=>{
+    const done=!!p.done[st.id], open=!!S.open[st.id], note=p.notes[st.id]||"";
+    const nf=(st.f||[]).filter(k=>F[k]&&applies(F[k])); const filled=nf.filter(k=>(p.fields[k]||"").trim()).length;
+    return `<article class="step${done?" done":""}${open?" open":""}" id="s-${st.id}">
+      <div class="sh"><input type="checkbox" class="cb" id="cb-${st.id}" data-step="${st.id}" ${done?"checked":""} aria-label="${esc(st.t)} tamamlandı">
+      <button class="sbtn" data-toggle="${st.id}" aria-expanded="${open}"><span class="st">${esc(st.t)}</span>
+      <span class="meta">${pchip(st.p)}${st.must?`<span class="chip must">Zorunlu</span>`:""}${nf.length?`<span class="has">Form ${filled}/${nf.length}</span>`:""}${note?`<span class="has">Not var</span>`:""}</span></button>
+      <button class="tog" data-toggle="${st.id}" aria-label="Ayrıntıları aç/kapat">${chev}</button></div>
+      ${open?`<div class="sb"><div class="info">${st.info}</div>
+        ${st.warn?`<div class="callout"><b>Dikkat:</b> ${esc(st.warn)}</div>`:""}
+        ${st.links?`<div class="links">${st.links.map(([l,u])=>`<a href="${u}" target="_blank" rel="noopener">${esc(l)} ↗</a>`).join("")}</div>`:""}
+        ${nf.length?`<div class="fields">${nf.map(fieldHTML).join("")}</div>`:""}
+        <div class="note"><label for="n-${st.id}">Notların</label><textarea id="n-${st.id}" data-note="${st.id}" rows="2" placeholder="Bu adımla ilgili hatırlatma, bağlantı, karar…">${esc(note)}</textarea></div>
+      </div>`:""}
+    </article>`;}).join("")}</div>
+  <div class="toolbar" style="margin-top:20px">${S.phase>0?`<button class="btn" data-phase="${S.phase-1}">← ${esc(PHASES[S.phase-1].t)}</button>`:""}
+  ${S.phase<PHASES.length-1?`<button class="btn primary" data-phase="${S.phase+1}">${esc(PHASES[S.phase+1].t)} →</button>`:""}</div>`;
+}
+
+function renderCard(){
+  const p=P();
+  return `<h1>Bilgi kartı</h1><p class="lead">Projenin tüm form alanları tek yerde. Kontrol listesindeki adımlardan girdiklerin burada da görünür; burada değiştirdiğin adımlara yansır.</p>
+  <div class="toolbar"><button class="btn" data-act="copyCard">Metin olarak kopyala</button>${S.downloads?`<button class="btn" data-act="downloadJson">JSON indir</button>`:""}</div>
+  ${GROUPS.map(([g,label])=>{ const ks=Object.keys(F).filter(k=>F[k].g===g&&applies(F[k])); if(!ks.length) return "";
+    return `<section class="card-group"><h2>${esc(label)}</h2><div class="fields">${ks.map(fieldHTML).join("")}</div></section>`; }).join("")}`;
+}
+
+function renderSizes(){
+  const rows=(r)=>r.map(x=>`<tr><td>${x[0]}</td><td class="mono">${x[1]}</td><td>${x[2]}</td></tr>`).join("");
+  return `<h1>Ölçüler ve limitler</h1><p class="lead">Görseller ve metinler için mağazaların istediği değerler. Değerler zamanla değişebilir; yükleme ekranındaki uyarı her zaman önceliklidir.</p>
+  <h2>Görseller · App Store</h2><div class="tbl"><table><thead><tr><th>Öğe</th><th>Boyut</th><th>Not</th></tr></thead><tbody>${rows([
+   ["Uygulama ikonu","1024 × 1024","PNG, saydamlık yok, köşe yuvarlatma yok"],
+   ["iPhone 6.9″ ekran görüntüsü","1320 × 2868","veya 1290 × 2796 / 1260 × 2736; zorunlu, 1–10 adet"],
+   ["iPhone 6.5″ ekran görüntüsü","1284 × 2778","6.9″ verilmezse gerekir; 1242 × 2688 de olur"],
+   ["iPad 13″ ekran görüntüsü","2064 × 2752","veya 2048 × 2732; iPad destekleniyorsa zorunlu"],
+   ["App Preview videosu","15–30 sn","en fazla 3 adet, H.264/HEVC, ekran görüntüsüyle aynı çözünürlük"]])}</tbody></table></div>
+  <h2>Görseller · Google Play</h2><div class="tbl"><table><thead><tr><th>Öğe</th><th>Boyut</th><th>Not</th></tr></thead><tbody>${rows([
+   ["Mağaza ikonu","512 × 512","32-bit PNG, en fazla 1 MB"],
+   ["Adaptive icon","108 × 108 dp","ön + arka katman, güvenli alan 66 dp çember; monochrome katman önerilir"],
+   ["Öne çıkan görsel","1024 × 500","JPEG veya 24-bit PNG, zorunlu"],
+   ["Telefon ekran görüntüsü","320–3840 px","2–8 adet, en-boy oranı en fazla 2:1; öne çıkarılma için 4+ adet, 1080 px+"],
+   ["7″ ve 10″ tablet","320–3840 px","büyük ekran vitrinleri için önerilir"],
+   ["Tanıtım videosu","YouTube URL","reklamsız, herkese açık veya liste dışı"]])}</tbody></table></div>
+  <h2>Metin limitleri</h2><div class="tbl"><table><thead><tr><th>Alan</th><th>App Store</th><th>Google Play</th></tr></thead><tbody>
+   ${[["Ad","30","30"],["Alt başlık / kısa açıklama","30","80"],["Promosyon metni","170","yok"],["Anahtar kelimeler","100","yok (açıklama sayılır)"],["Açıklama","4000","4000"],["Sürüm notları","4000","500"],["Uygulama içi ürün adı","30 (görünen ad)","55"]].map(r=>`<tr><td>${r[0]}</td><td class="mono">${r[1]}</td><td class="mono">${r[2]}</td></tr>`).join("")}</tbody></table></div>
+  <h2>Ücretler ve süreler</h2><div class="tbl"><table><thead><tr><th>Konu</th><th>Değer</th><th>Not</th></tr></thead><tbody>${rows([
+   ["Apple Developer Program","99 USD / yıl","bitince uygulamalar mağazadan kalkar"],
+   ["Google Play Console","25 USD","tek seferlik"],
+   ["Mağaza komisyonu","%15 / %30","küçük işletme programları ve Play abonelikleri %15"],
+   ["Play kişisel hesap kapalı test","12 kişi · 14 gün","üretim erişimi için zorunlu"],
+   ["TestFlight build ömrü","90 gün","dahili 100, harici 10.000 test kullanıcısı"],
+   ["Apple Distribution sertifikası","1 yıl","provisioning profile da 1 yıl"],
+   ["App Store inceleme","genellikle 24–48 saat","ret sonrası yeniden gönderim yeniden sıraya girer"],
+   ["Play inceleme","saatler – günler","yeni hesaplarda 7 güne kadar uzayabilir"],
+   ["Android vitals eşikleri","çökme %1,09 · ANR %0,47","aşılırsa görünürlük düşebilir"],
+   ["iOS kademeli yayın","7 gün","%1 → 2 → 5 → 10 → 20 → 50 → 100"]])}</tbody></table></div>`;
+}
+
+function renderSettings(){
+  const p=P();
+  return `<h1>Proje ayarları</h1><p class="lead">Adı ve hedef platformları değiştir. Platform kapatınca o platforma özel adımlar ve alanlar gizlenir, girdiğin veriler silinmez.</p>
+  <div class="settings">
+    <div class="fld"><label for="projName">Proje adı</label><input id="projName" type="text" value="${esc(p.name)}"></div>
+    <div><span class="lbl">Platformlar</span><div class="ptoggle" style="margin-top:6px">
+      <label><input type="checkbox" id="plIos" ${p.ios?"checked":""}> iOS (App Store)</label>
+      <label><input type="checkbox" id="plAndroid" ${p.android?"checked":""}> Android (Google Play)</label></div></div>
+    <div class="hint">Oluşturulma: ${new Date(p.created).toLocaleDateString("tr-TR")} · Son değişiklik: ${new Date(p.updated).toLocaleString("tr-TR")}</div>
+  </div>
+  <div class="settings"><h2 style="font-size:17px;margin:0">Kontrol listesini sıfırla veya projeyi sil</h2>
+    ${S.confirmDel?`<div class="confirm">"${esc(p.name)}" ve tüm verileri kalıcı olarak silinsin mi? <button class="btn small danger" data-act="delYes">Evet, sil</button><button class="btn small" data-act="delNo">Vazgeç</button></div>`
+    :`<div class="row"><button class="btn" data-act="resetChecks">İşaretleri temizle</button><button class="btn danger" data-act="delAsk">Projeyi sil</button></div><span class="hint">İşaretleri temizlemek form alanlarını ve notları korur; bir sonraki sürüm için listeyi yeniden kullanmana yarar.</span>`}
+  </div>`;
+}
+
+function render(){
+  if(!P()) return;
+  renderRail();
+  const v=$("#view");
+  v.innerHTML = S.view==="card"?renderCard(): S.view==="sizes"?renderSizes(): S.view==="settings"?renderSettings(): renderList();
+}
+
+/* ---------- Etkileşim ---------- */
+function toast(t){ const el=$("#toast"); el.textContent=t; el.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>el.hidden=true,2200); }
+function go(view,phase){ S.view=view; if(phase!=null) S.phase=phase; S.confirmDel=false; ls.set(":ui",{view:S.view,phase:S.phase}); render(); window.scrollTo({top:0}); }
+
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button"); if(!t) return;
+  if(t.dataset.phase!=null){ go("list",+t.dataset.phase); return; }
+  if(t.dataset.view){ go(t.dataset.view); return; }
+  if(t.dataset.toggle){ const id=t.dataset.toggle; S.open[id]=!S.open[id]; render(); return; }
+  const a=t.dataset.act; const p=P();
+  if(a==="expandAll"){ PHASES[S.phase].steps.forEach(s=>S.open[s.id]=true); render(); }
+  if(a==="collapseAll"){ PHASES[S.phase].steps.forEach(s=>S.open[s.id]=false); render(); }
+  if(a==="delAsk"){ S.confirmDel=true; render(); }
+  if(a==="delNo"){ S.confirmDel=false; render(); }
+  if(a==="delYes"){ removeProject(p.id); }
+  if(a==="resetChecks"){ p.done={}; touch(p); render(); toast("İşaretler temizlendi"); }
+  if(a==="copyCard"){ copyText(cardText()); }
+  if(a==="downloadJson"){ downloadJson(); }
+  if(t.id==="newProj"){ const np=newProject("Yeni uygulama "+(S.order.length+1)); delete np._draft; S.projects[np.id]=np; S.order.push(np.id); S.cur=np.id; ls.set(":cur",np.id); touch(np); go("settings"); setTimeout(()=>{const i=$("#projName"); if(i){i.focus(); i.select();}},0); }
+});
+document.addEventListener("change",e=>{
+  const t=e.target, p=P();
+  if(t.id==="projSel"){ S.cur=t.value; ls.set(":cur",S.cur); S.confirmDel=false; render(); return; }
+  if(t.dataset.step){ p.done[t.dataset.step]=t.checked; if(!t.checked) delete p.done[t.dataset.step]; touch(p); render(); return; }
+  if(t.id==="plIos"||t.id==="plAndroid"){ p[t.id==="plIos"?"ios":"android"]=t.checked; if(!p.ios&&!p.android){ p[t.id==="plIos"?"android":"ios"]=true; toast("En az bir platform seçili olmalı"); } touch(p); render(); return; }
+  if(t.dataset.k && t.tagName==="SELECT"){ p.fields[t.dataset.k]=t.value; touch(p); }
+});
+document.addEventListener("input",e=>{
+  const t=e.target, p=P(); if(!p) return;
+  if(t.dataset.k && t.tagName!=="SELECT"){ const k=t.dataset.k; p.fields[k]=t.value; const c=document.getElementById("c-"+k); if(c){ c.textContent=`${t.value.length}/${F[k].max}`; c.classList.toggle("over",t.value.length>F[k].max);} touch(p); }
+  if(t.dataset.note){ p.notes[t.dataset.note]=t.value; if(!t.value) delete p.notes[t.dataset.note]; touch(p); }
+  if(t.id==="projName"){ p.name=t.value; const o=$("#projSel option[value='"+p.id+"']"); if(o) o.textContent=t.value||"Adsız"; touch(p); }
+});
+
+function cardText(){
+  const p=P(); let out=`# ${p.name}\n`;
+  for(const [g,label] of GROUPS){ const ks=Object.keys(F).filter(k=>F[k].g===g&&applies(F[k])&&(p.fields[k]||"").trim()); if(!ks.length) continue;
+    out+=`\n## ${label}\n`; ks.forEach(k=>{ const v=p.fields[k]; out+= v.includes("\n")?`${F[k].l}:\n${v}\n`:`${F[k].l}: ${v}\n`; }); }
+  return out;
+}
+async function copyText(s){
+  try{ await navigator.clipboard.writeText(s); toast("Kopyalandı"); }
+  catch{ const ta=document.createElement("textarea"); ta.value=s; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); let ok=false; try{ ok=document.execCommand("copy"); }catch{} ta.remove(); toast(ok?"Kopyalandı":"Kopyalanamadı; tarayıcı izin vermedi"); }
+}
+async function downloadJson(){
+  const p=P(); const name=(p.name||"proje").toLowerCase().replace(/[^a-z0-9ğüşıöç]+/gi,"-").replace(/^-|-$/g,"")||"proje";
+  try{ await S.downloads.save({filename:name+".json", data:JSON.stringify({...plain(p),name:p.name},null,2)}); }
+  catch(e){ if(e&&e.code!=="cancelled"&&e.code!=="declined") toast("İndirilemedi"); }
+}
+
+/* ---------- Başlat ---------- */
+(function boot(){
+  const ui=ls.get(":ui"); if(ui){ S.view=ui.view||"list"; S.phase=Math.min(ui.phase||0,PHASES.length-1); }
+  const p=newProject(); S.projects[p.id]=p; S.order=[p.id]; S.cur=p.id;
+  S.open[PHASES[S.phase].steps[0].id]=true;
+  render(); initStore(); initDownloads();
+})();
+</script>
+</body>
+
+</html>
